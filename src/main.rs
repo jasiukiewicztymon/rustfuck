@@ -29,9 +29,9 @@ fn main() {
     String::from("}"), String::from("~")
     ];
 
-    let binding = "a".to_string();
+    let binding = " ".to_string();
     let mut prompt = binding.chars();
-    let source: String = String::from(">+.,.<.");
+    let source: String = String::from("++++.[>+++<-]>.");
     let mut memory: Vec<i32> = Vec::from([0]); let mut loops: Vec<i32> = Vec::new();
     let mut index: i32 = 0; let mut i: i32 = 0;
     while i < source.len().try_into().unwrap() {
@@ -49,7 +49,7 @@ fn main() {
                 }
             }
             b'[' => {
-                loops.push(i + 1);
+                loops.push(i);
             }
             b']' => {
                 if memory[usize::try_from(index).unwrap()] == 0 {
@@ -78,7 +78,7 @@ fn main() {
                 memory[usize::try_from(index).unwrap()] += 1;
             }
             b'-' => {
-                if memory[usize::try_from(index).unwrap()] == 0 {
+                if memory[usize::try_from(index).unwrap()] > 0 {
                     memory[usize::try_from(index).unwrap()] -= 1;
                 }
             }
