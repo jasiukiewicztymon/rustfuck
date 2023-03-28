@@ -1,3 +1,45 @@
+use std::io::stdout;
+
+use crossterm::event::{
+    poll, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+};
+use crossterm::{
+    cursor::position,
+    event::{
+        read, DisableBracketedPaste, DisableFocusChange, DisableMouseCapture, EnableBracketedPaste,
+        EnableFocusChange, EnableMouseCapture, Event, KeyCode,
+    },
+    execute, queue,
+    terminal::{disable_raw_mode, enable_raw_mode},
+    Result,
+};
+use std::time::Duration;
+
+fn print_events() -> Result<char> {
+    let mut ret = ' ';
+    loop {
+        // Blocking read
+        match read()? {
+            Event::Key(event) => {
+                match event.code {
+                    KeyCode::Char(c) => {
+                        ret = c;
+                        break;
+                    }
+                    _ => {}
+                };
+            }
+            Event::Mouse(event) => {}
+            Event::FocusGained => {}
+            Event::FocusLost => {}
+            Event::Paste(data) => {}
+            Event::Resize(width, height) => {}
+        }
+    }
+
+    Ok(ret)
+}
+
 fn main() {
     let alpha: Vec<String> = 
     vec![
@@ -29,9 +71,7 @@ fn main() {
     String::from("}"), String::from("~")
     ];
 
-    let binding = " ".to_string();
-    let mut prompt = binding.chars();
-    let source: String = String::from("++++.[>+++<-]>.");
+    let source: String = String::from("++++++++++[>+>+++>+++++++>++++++++++<<<<-]>>>>.<---.>+++++++++++.-----------.+.<<++.>-.>+++++++++++++.-----------------.++++++++.+++++.--------.+++++++++++++++.------------------.++++++++.");
     let mut memory: Vec<i32> = Vec::from([0]); let mut loops: Vec<i32> = Vec::new();
     let mut index: i32 = 0; let mut i: i32 = 0;
     while i < source.len().try_into().unwrap() {
@@ -59,6 +99,19 @@ fn main() {
                     i = loops[usize::try_from(loops.len() - 1).unwrap()];
                 }
             }
+            b',' => {
+                let res = print_events();
+                // idk why but there is a replication
+                print_events();
+                match res {
+                    Ok(c) => {
+                        memory[usize::try_from(index).unwrap()] = c as i32;
+                    }
+                    Err(e) => {
+                        panic!("[🧠 Fuckrust] : Fatal error, while prompting the value");
+                    }
+                }
+            }
             b'.' => {
                 if memory[usize::try_from(index).unwrap()] < alpha.len().try_into().unwrap() {
                     if memory[usize::try_from(index).unwrap()] < 32 {
@@ -70,10 +123,6 @@ fn main() {
                     }
                 }
             }
-            b',' => {
-                let c = prompt.next().unwrap();
-                memory[usize::try_from(index).unwrap()] = c as i32;
-            }
             b'+' => {
                 memory[usize::try_from(index).unwrap()] += 1;
             }
@@ -83,7 +132,7 @@ fn main() {
                 }
             }
             _ => {
-                panic!("[🧠 Fuckrust] : Invalid token {}", ch);
+                //panic!("[🧠 Fuckrust] : Invalid token {}", ch);
             }
         }
         i += 1;
