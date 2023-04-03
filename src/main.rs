@@ -1,80 +1,64 @@
-use std::io::stdout;
+use std::io;
+use std::env;
+use std::fs;
 
-use crossterm::event::{
-    poll, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
-};
-use crossterm::{
-    cursor::position,
-    event::{
-        read, DisableBracketedPaste, DisableFocusChange, DisableMouseCapture, EnableBracketedPaste,
-        EnableFocusChange, EnableMouseCapture, Event, KeyCode,
-    },
-    execute, queue,
-    terminal::{disable_raw_mode, enable_raw_mode},
-    Result,
-};
-use std::time::Duration;
+use crossterm::{queue, style::Print};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 
-fn print_events() -> Result<char> {
-    let mut ret = ' ';
-    loop {
-        // Blocking read
-        match read()? {
-            Event::Key(event) => {
-                match event.code {
-                    KeyCode::Char(c) => {
-                        ret = c;
-                        break;
-                    }
-                    _ => {}
-                };
-            }
-            Event::Mouse(event) => {}
-            Event::FocusGained => {}
-            Event::FocusLost => {}
-            Event::Paste(data) => {}
-            Event::Resize(width, height) => {}
-        }
-    }
+pub fn get_char() -> u8 {
+    use io::Read;
+    // Ideally you would buffer with BufReader
+    let mut stdino = io::stdin();
+    let mut buf = [0u8];
+    stdino.read_exact(&mut buf).unwrap();
+    buf[0]
+}
+pub fn write(content: String) {
+    use io::Write;
 
-    Ok(ret)
+    let mut stdout = io::stdout();
+    queue!(stdout, Print(content.to_string()));
+    stdout.flush();
 }
 
 fn main() {
-    let alpha: Vec<String> = 
-    vec![
-    String::from("0x00"), String::from("0x01"), String::from("0x02"), String::from("0x03"), String::from("0x04"), 
-    String::from("0x05"), String::from("0x06"), String::from("0x07"), String::from("0x08"), String::from("0x09"), 
-    String::from("0x10"), String::from("0x11"), String::from("0x12"), String::from("0x13"), String::from("0x14"), 
-    String::from("0x15"), String::from("0x16"), String::from("0x17"), String::from("0x18"), String::from("0x19"),
-    String::from("0x20"), String::from("0x21"), String::from("0x22"), String::from("0x23"), String::from("0x24"), 
-    String::from("0x25"), String::from("0x26"), String::from("0x27"), String::from("0x28"), String::from("0x29"),
-    String::from("0x30"), String::from("0x31"), String::from(" "), String::from("!"), String::from("\""), 
-    String::from("#"), String::from("$"), String::from("%"), String::from("&"), String::from("'"), 
-    String::from("("), String::from(")"), String::from("*"), String::from("+"), String::from(","), 
-    String::from("-"), String::from("."), String::from("/"), String::from("0"), String::from("1"), 
-    String::from("2"), String::from("3"), String::from("4"), String::from("5"), String::from("6"), 
-    String::from("7"), String::from("8"), String::from("9"), String::from(":"), String::from(";"),
-    String::from("<"), String::from("="), String::from(">"), String::from("?"), String::from("@"), 
-    String::from("A"), String::from("B"), String::from("C"), String::from("D"), String::from("E"), 
-    String::from("F"), String::from("G"), String::from("H"), String::from("I"), String::from("J"), 
-    String::from("K"), String::from("L"), String::from("M"), String::from("N"), String::from("O"),
-    String::from("P"), String::from("Q"), String::from("R"), String::from("S"), String::from("T"), 
-    String::from("U"), String::from("V"), String::from("W"), String::from("X"), String::from("Y"), 
-    String::from("Z"), String::from("["), String::from("\\"), String::from("]"), String::from("^"), 
-    String::from("_"), String::from("`"), String::from("a"), String::from("b"), String::from("c"),
-    String::from("d"), String::from("e"), String::from("f"), String::from("g"), String::from("h"), 
-    String::from("i"), String::from("j"), String::from("k"), String::from("l"), String::from("m"),
-    String::from("n"), String::from("o"), String::from("p"), String::from("q"), String::from("r"), 
-    String::from("s"), String::from("t"), String::from("u"), String::from("v"), String::from("w"),
-    String::from("x"), String::from("y"), String::from("z"), String::from("{"), String::from("|"), 
-    String::from("}"), String::from("~")
-    ];
+    let args: Vec<String> = env::args().collect();
 
-    let source: String = String::from("++++++++++[>+>+++>+++++++>++++++++++<<<<-]>>>>.<---.>+++++++++++.-----------.+.<<++.>-.>+++++++++++++.-----------------.++++++++.+++++.--------.+++++++++++++++.------------------.++++++++.");
+    let mut HexPrint: bool = false;
+    let mut BetterPrint: bool = false;
+    let mut DebugPrint: bool = false;
+
+    let mut Light: bool = false;
+
+    let mut filename;
+
+    if args.len() > 1 {
+        filename = &args[args.len() - 1];
+        let args = &args[1..args.len() - 1];
+
+        for arg in args {
+            let mut arg: &str = arg;
+            match arg {
+                "--hex" =>  HexPrint = true,
+                "--bprint" => BetterPrint = true,
+                "--debug" => DebugPrint = true,
+                _ => panic!("[🧠 Fuckrust] : Fatal error, unknown argument")
+            }
+        }
+    }
+    else {
+        panic!("[🧠 Fuckrust] : Fatal error, any file name has been passed");
+    }
+
+    let source: String = String::from(fs::read_to_string(filename)
+    .expect("Should have been able to read the file"));
     let mut memory: Vec<i32> = Vec::from([0]); let mut loops: Vec<i32> = Vec::new();
     let mut index: i32 = 0; let mut i: i32 = 0;
     while i < source.len().try_into().unwrap() {
+        if DebugPrint {
+            write(String::from("[🧠 Fuckrust DEBUG] : iteration number ".to_owned() + &i.to_string() + "\n"));
+        }
+        
         let ch = source.as_bytes()[usize::try_from(i).unwrap()];
         match ch {
             b'>' => {
@@ -97,31 +81,48 @@ fn main() {
                 }
                 else {
                     i = loops[usize::try_from(loops.len() - 1).unwrap()];
+                    if DebugPrint {
+                        write(String::from("[🧠 Fuckrust DEBUG] : go to iteration number ".to_owned() + &(i + 1).to_string() + "\n"));
+                    }
                 }
             }
             b',' => {
-                let res = print_events();
-                // idk why but there is a replication
-                print_events();
-                match res {
-                    Ok(c) => {
-                        memory[usize::try_from(index).unwrap()] = c as i32;
-                    }
-                    Err(e) => {
-                        panic!("[🧠 Fuckrust] : Fatal error, while prompting the value");
-                    }
-                }
+                enable_raw_mode();
+
+                let c = get_char();
+                memory[usize::try_from(index).unwrap()] = c as i32;
+
+                disable_raw_mode();
             }
             b'.' => {
-                if memory[usize::try_from(index).unwrap()] < alpha.len().try_into().unwrap() {
-                    if memory[usize::try_from(index).unwrap()] < 32 {
-                        print!("\x1b[1m");
+                if BetterPrint && Light {
+                    write(String::from("\x1b[1m"));
+                }
+
+                if HexPrint {
+                    let temp: u32 = memory[usize::try_from(index).unwrap()].try_into().unwrap();
+
+                    if temp < 32 || temp > 126 {
+                        if temp < 10 {
+                            write(String::from("0x000".to_owned() + &temp.to_string()));
+                        }
+                        else if temp < 100 {
+                            write(String::from("0x00".to_owned() + &temp.to_string()));
+                        }
+                        else if temp < 1000 {
+                            write(String::from("0x0".to_owned() + &temp.to_string()));
+                        }
+                        else {
+                            write(String::from("\x1b[31m0x0000"));
+                        }
                     }
-                    print!("{}", alpha[usize::try_from(memory[usize::try_from(index).unwrap()]).unwrap()]);
-                    if memory[usize::try_from(index).unwrap()] < 32 {
-                        print!("\x1b[0m");
+                    else {
+                        write(String::from(std::char::from_u32(memory[usize::try_from(index).unwrap()].try_into().unwrap()).unwrap()));
                     }
                 }
+                else { write(String::from(std::char::from_u32(memory[usize::try_from(index).unwrap()].try_into().unwrap()).unwrap())); }
+                Light = !Light;
+                write(String::from("\x1b[0m"));
             }
             b'+' => {
                 memory[usize::try_from(index).unwrap()] += 1;
@@ -132,7 +133,6 @@ fn main() {
                 }
             }
             _ => {
-                //panic!("[🧠 Fuckrust] : Invalid token {}", ch);
             }
         }
         i += 1;
