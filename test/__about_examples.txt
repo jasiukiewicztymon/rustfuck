@@ -1,2 +1,0 @@
-Examples downloaded from:
-http://esoteric.sange.fi/brainfuck/
